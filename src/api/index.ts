@@ -1,6 +1,5 @@
-const express = require('express')
-
-const summoner = require('./summoner')
+import express from 'express'
+import summoner from './summoner'
 
 const router = express.Router()
 
@@ -10,4 +9,4 @@ router.get('/', (req, res) => {
 
 router.use('/summoner', summoner)
 
-module.exports = router
+export default router

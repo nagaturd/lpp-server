@@ -1,5 +1,5 @@
-const express = require('express')
-const fetch = require('node-fetch')
+import express from 'express'
+import fetch from 'node-fetch'
 
 const router = express.Router()
 
@@ -13,10 +13,12 @@ router.get('/:name', async (req, res) => {
 
     const response = await fetch(`${BASE_URL}${summoner}?api_key=${apiKey}`)
     const data = await response.json()
+    console.log(data)
 
     res.json(data)
   } catch (err) {
     res.send('error')
   }
 })
-module.exports = router
+
+export default router
