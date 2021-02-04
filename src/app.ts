@@ -1,15 +1,20 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import api from './api'
+import express from "express";
+import dotenv from "dotenv";
+import api from "./api";
+import mongoose from "mongoose";
 
-dotenv.config()
+dotenv.config();
 
-const app = express()
+const mongoDB = `${process.env.DB_CONN}`;
 
-app.get('/', (req, res) => {
-  res.send('Base app page')
-})
+mongoose.connect(
+  mongoDB,
+  { useNewUrlParser: true, useUnifiedTopology: true },
+  () => console.log("connected to DB")
+);
 
-app.use('/api', api)
+const app = express();
 
-export default app
+app.use("/api", api);
+
+export default app;

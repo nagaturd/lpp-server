@@ -1,12 +1,8 @@
-import express from 'express'
-import summoner from './summoner'
+import express from "express";
+import summoner from "./summoner";
 
-const router = express.Router()
+const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.send('base api page')
-})
+router.use("/summoner", summoner);
 
-router.use('/summoner', summoner)
-
-export default router
+export default router;
