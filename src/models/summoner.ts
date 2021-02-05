@@ -7,9 +7,12 @@ const SummonerSchema = new Schema({
   accountId: String,
   puuid: String,
   name: String,
+  name_lower: String,
+  previous_names: [String],
   profileIconId: Number,
   revisionDate: Number,
   summonerLevel: Number,
+  lastUpdated: Date,
 });
 
 const Summoner = mongoose.model("Summoner", SummonerSchema);
