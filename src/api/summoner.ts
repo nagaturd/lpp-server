@@ -37,14 +37,24 @@ const checkSummoner = async (name: string) => {
 const requestSummonerFromDB = async (name: string) => {
   const query = { name_lower: name.toLowerCase().trim() };
 
-  return await Summoner.findOneAndUpdate(
-    query,
-    { lastUpdate: moment() },
-    {
-      new: true,
-      upsert: true,
-    }
+  let summoner = await Summoner.findOne(query);
+
+  // Had to do a weird workaround to access property of 'summoner'
+  const summonerJSON = JSON.parse(JSON.stringify(summoner?.toObject()));
+
+  console.log(
+    "Time since last update (in seconds): ",
+    moment().diff(moment(summonerJSON.lastUpdated), "s")
   );
+
+  // If the summoner data is not older than 30 seconds, grab existing
+  if (moment().diff(moment(summonerJSON.lastUpdated), "s") < 30) {
+    return await Summoner.findOne(query);
+  }
+
+  // If summoner data is older than 30 seconds, refresh DB
+  console.log("DB out of date, redirecting to API");
+  return requestSummonerFromAPI(name);
 };
 
 const requestSummonerFromAPI = async (name: string) => {
@@ -53,19 +63,6 @@ const requestSummonerFromAPI = async (name: string) => {
   const response = await fetch(`${BASE_URL}${name}?api_key=${apiKey}`);
   const data = await response.json();
 
-  /*
-  const testData = {
-    id: "0bWq-E9HF_bKwWbYHaSpyZ23Uv7ESWF7YiTNZEedfyIkdiE",
-    accountId: "FC4J_e8AJY_tszkZZxwVthekJRXAAuymBWcQLi0ALy2u-bU",
-    puuid:
-      "0-3YvmeugDdfzaehTcAALBulmdsv1Lt3pgUmgLfxoVNLQcmIvntIy3QCbg0nQnymzYMR-7M7ShNniQ",
-    name: "nagaturd",
-    profileIconId: 581,
-    revisionDate: 1612046851000,
-    summonerLevel: 202,
-  };
-  */
-
   return createSummoner(data);
 };
 
@@ -73,6 +70,7 @@ const createSummoner = async (data: ISummonerAPI) => {
   const query = { accountId: data.accountId };
   const ifExists = await Summoner.exists(query);
 
+  // If the summoner doesn't exist, create a new one in the DB
   if (!ifExists) {
     const summoner = new Summoner({
       id: data.id,
@@ -80,7 +78,6 @@ const createSummoner = async (data: ISummonerAPI) => {
       puuid: data.puuid,
       name: data.name,
       name_lower: data.name?.toLowerCase().trim(),
-      previous_names: data.name,
       profileIconId: data.profileIconId,
       revisionDate: data.revisionDate,
       summonerLevel: data.summonerLevel,
@@ -91,18 +88,26 @@ const createSummoner = async (data: ISummonerAPI) => {
       if (err) return console.log(err);
     });
 
-    console.log("Created from API: ", summoner);
     return summoner;
   }
 
+  // If the summoner accountId exists but other data changed
+  //    e.g. 'name', 'summonerLevel'
+  // or if the data is out of date, find and update existing document
   return await Summoner.findOneAndUpdate(
     query,
     {
+      id: data.id,
+      accountId: data.accountId,
+      puuid: data.puuid,
       name: data.name,
       name_lower: data.name?.toLowerCase().trim(),
-      $push: { previous_names: data.name },
+      profileIconId: data.profileIconId,
+      revisionDate: data.revisionDate,
+      summonerLevel: data.summonerLevel,
+      lastUpdated: moment(),
     },
-    { new: true }
+    { new: true, upsert: true }
   );
 };
 
